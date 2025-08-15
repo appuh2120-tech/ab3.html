@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>My Online Shop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
+        header { background:#222; color:white; padding:15px; text-align:center; }
+        .container { max-width:900px; margin:auto; padding:20px; }
+        .product { background:white; margin:10px 0; padding:15px; border-radius:5px; }
+        .btn { background:orange; color:white; padding:10px 15px; border:none; cursor:pointer; border-radius:4px; }
+        .btn:hover { background:darkorange; }
+        input, textarea { width:100%; padding:8px; margin:5px 0; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🛒 My Online Shop</h1>
+</header>
+
+<div class="container">
+    <h2>Products</h2>
+    <div class="product">
+        <h3>Product 1 - ₹499</h3>
+        <button class="btn" onclick="addToCart('Product 1', 499)">Add to Cart</button>
+    </div>
+    <div class="product">
+        <h3>Product 2 - ₹799</h3>
+        <button class="btn" onclick="addToCart('Product 2', 799)">Add to Cart</button>
+    </div>
+    <hr>
+    <h2>Checkout</h2>
+    <input type="text" id="name" placeholder="Your Name">
+    <textarea id="address" placeholder="Your Address"></textarea>
+    <button class="btn" onclick="placeOrder()">Place Order</button>
+
+    <hr>
+    <h2>My Orders</h2>
+    <div id="ordersList"></div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
+<script>
+    // 1. Firebase Config (ಇಲ್ಲಿ ನಿನ್ನ keys ಹಾಕು)
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+    };
+
+    // 2. Init Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let cart = [];
+
+    function addToCart(name, price) {
+        cart.push({ name, price });
+        alert(name + " added to cart!");
+    }
+
+    function placeOrder() {
+        let customerName = document.getElementById("name").value;
+        let customerAddress = document.getElementById("address").value;
+        if (!customerName || !customerAddress || cart.length === 0) {
+            alert("❌ Please fill details and add products!");
+            return;
+        }
+
+        db.collection("orders").add({
+            customerName,
+            customerAddress,
+            cart,
+            date: new Date()
+        }).then(() => {
+            alert("✅ Order placed successfully!");
+            cart = [];
+            loadOrders();
+        });
+    }
+
+    function loadOrders() {
+        document.getElementById("ordersList").innerHTML = "";
+        db.collection("orders").orderBy("date", "desc").get().then(snapshot => {
+            snapshot.forEach(doc => {
+                let data = doc.data();
+                let orderHTML = `<div class="product">
+                    <strong>${data.customerName}</strong> (${data.customerAddress})<br>
+                    Items: ${data.cart.map(item => item.name + " - ₹" + item.price).join(", ")}
+                </div>`;
+                document.getElementById("ordersList").innerHTML += orderHTML;
+            });
+        });
+    }
+
+    loadOrders();
+</script>
+
+</body>
+</html>
